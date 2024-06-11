@@ -7,6 +7,8 @@ import os
 from inputimeout import inputimeout, TimeoutOccurred
 import pyttsx3
 import csv
+import webbrowser
+from datetime import datetime
 
 # Hàm để nghe lệnh từ người dùng
 def listen():
@@ -14,23 +16,23 @@ def listen():
     engine = pyttsx3.init()
     with sr.Microphone() as source:
         recognizer.adjust_for_ambient_noise(source, duration=1)
-        print("Bạn có thể nói điều gì đó...")
-        speak("Tôi đang lắng nghe bạn.")
-        audio = recognizer.listen(source, timeout=5)
-        try:
-            text = recognizer.recognize_google(audio, language='vi-VN')
-            print(f"Bạn nói: {text}")
-            engine.say(text)
-            engine.runAndWait()
-            return text.lower()
-        except sr.UnknownValueError:
-            print("Xin lỗi, tôi không hiểu bạn nói gì.")
-            speak("Xin lỗi, tôi không hiểu bạn nói gì.")
-            return ""
-        except sr.RequestError:
-            print("Xin lỗi, không thể kết nối đến dịch vụ nhận diện giọng nói.")
-            speak("Xin lỗi, không thể kết nối đến dịch vụ nhận diện giọng nói.")
-            return ""
+        while True:
+            print("Bạn có thể nói điều gì đó...")
+            speak("Tôi đang lắng nghe bạn.")
+            try:
+                audio = recognizer.listen(source)
+                text = recognizer.recognize_google(audio, language='vi-VN')
+                print(f"Bạn nói: {text}")
+                engine.say(text)
+                engine.runAndWait()
+                return text.lower()
+            except sr.UnknownValueError:
+                print("Xin lỗi, tôi không hiểu bạn nói gì.")
+                speak("Xin lỗi, tôi không hiểu bạn nói gì.")
+            except sr.RequestError:
+                print("Xin lỗi, không thể kết nối đến dịch vụ nhận diện giọng nói.")
+                speak("Xin lỗi, không thể kết nối đến dịch vụ nhận diện giọng nói.")
+                return ""
 
 # Hàm để trợ lý ảo nói
 def speak(text):
@@ -63,12 +65,12 @@ def read_info(name, email, phone, gender, address):
 # Hàm để đăng ký người dùng
 def register_user():
     try:
-        name = inputimeout(prompt="Nhập tên: ", timeout=10)
-        email = inputimeout(prompt="Nhập email: ", timeout=10)
-        phone = inputimeout(prompt="Nhập số điện thoại: ", timeout=10)
-        gender = inputimeout(prompt="Nhập giới tính (1: Nam, 2: Nữ, 3: Khác): ", timeout=10)  # Thay vì chọn, nhập giới tính từ danh sách
+        name = input("Nhập tên: ")
+        email = input("Nhập email: ")
+        phone = input("Nhập số điện thoại: ")
+        gender = input("Nhập giới tính (1: Nam, 2: Nữ, 3: Khác): ")  # Thay vì chọn, nhập giới tính từ danh sách
         gender = map_gender(gender)
-        address = inputimeout(prompt="Nhập địa chỉ: ", timeout=10)
+        address = input("Nhập địa chỉ: ")
         read_info(name, email, phone, gender, address)
         print("Vui lòng nhìn vào camera để chụp ảnh.")
         speak("Vui lòng nhìn vào camera để chụp ảnh.")
@@ -113,6 +115,32 @@ def save_user_info(name, email, phone, gender, address, image_path):
         writer.writerow([name, email, phone, gender, address, image_path])
     return True
 
+# Hàm để hiển thị thông tin người dùng từ file CSV
+def display_user_info():
+    if os.path.isfile("user_info.csv"):
+        with open("user_info.csv", mode="r") as file:
+            reader = csv.reader(file)
+            next(reader)  # Bỏ qua tiêu đề
+            for row in reader:
+                print(f"Tên: {row[0]}, Email: {row[1]}, Số điện thoại: {row[2]}, Giới tính: {row[3]}, Địa chỉ: {row[4]}")
+                speak(f"Tên: {row[0]}, Email: {row[1]}, Số điện thoại: {row[2]}, Giới tính: {row[3]}, Địa chỉ: {row[4]}")
+    else:
+        print("Không có thông tin người dùng.")
+        speak("Không có thông tin người dùng.")
+
+# Hàm để mở Spotify
+def open_spotify():
+    print("Đang mở Spotify...")
+    speak("Đang mở Spotify...")
+    webbrowser.open("https://www.spotify.com")
+
+# Hàm để hiển thị thời gian hiện tại
+def tell_time():
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print(f"Bây giờ là {current_time}")
+    speak(f"Bây giờ là {current_time}")
+
 # Hàm để xóa màn hình console
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -123,31 +151,36 @@ def assistant():
     print("Xin chào bạn, tôi có thể giúp gì cho bạn?")
     speak("Xin chào bạn, tôi có thể giúp gì cho bạn?")
     while True:
+        print("\n------ MENU ------")
+        print("1. Đăng ký người dùng")
+        print("2. Hiển thị thông tin người dùng")
+        print("3. Mở Spotify")
+        print("4. Mấy giờ rồi")
+        print("5. Thoát")
+        print("------------------")
+        speak("Bạn muốn làm gì?")
         command = listen()
         clear_screen()  # Xóa màn hình console trước khi thoát
-        if "đăng ký người dùng" in command:
+        if "một" in command or "đăng ký" in command:
             print("Vui lòng nhập thông tin người dùng")
             speak("Vui lòng nhập thông tin người dùng")
             register_user()
-            while True:
-                print("Bạn còn muốn làm gì nữa không?")
-                speak("Bạn còn muốn làm gì nữa không?")
-                command = listen()
-                if "thoát" in command:
-                    clear_screen()  # Xóa màn hình console trước khi thoát
-                    print("Tạm biệt! Hẹn gặp lại.")
-                    speak("Tạm biệt! Hẹn gặp lại.")
-                    return
-                elif "đăng ký người dùng" in command:
-                    clear_screen()  # Xóa màn hình console trước khi thoát
-                    print("Vui lòng nhập thông tin người dùng")
-                    speak("Vui lòng nhập thông tin người dùng")
-                    register_user()
-        elif "thoát" in command:
+        elif "hai" in command or "hiển thị" in command:
+            print("Thông tin người dùng")
+            speak("Thông tin người dùng")
+            display_user_info()
+        elif "ba" in command or "spotify" in command:
+            open_spotify()
+        elif "bốn" in command or "giờ" in command:
+            tell_time()
+        elif "năm" in command or "thoát" in command:
             clear_screen()  # Xóa màn hình console trước khi thoát
             print("Tạm biệt! Hẹn gặp lại.")
             speak("Tạm biệt! Hẹn gặp lại.")
             return
+        else:
+            print("Lệnh không hợp lệ. Vui lòng thử lại.")
+            speak("Lệnh không hợp lệ. Vui lòng thử lại.")
 
 # Chạy trợ lý ảo
 if __name__ == "__main__":
